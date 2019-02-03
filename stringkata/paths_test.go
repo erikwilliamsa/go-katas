@@ -52,5 +52,4 @@ func TestChangePath(t *testing.T) {
 		actual := stringkata.ChangePath(test.current, test.dest)
 		assert.Equal(t, test.expected, actual, test.message)
 	}
-	assert.Equal(t, true, true)
 }
