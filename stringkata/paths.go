@@ -6,21 +6,7 @@ import (
 
 func ChangePath(current, destination string) string {
 
-	var curdirs, destdirs []string
-
-	if dirs := strings.Split(current, "/"); len(dirs) > 0 && dirs[0] == "" {
-		curdirs = dirs[1:]
-
-	} else {
-		curdirs = dirs
-	}
-
-	if dirs := strings.Split(destination, "/"); len(dirs) > 0 && dirs[0] == "" {
-		destdirs = dirs[1:]
-
-	} else {
-		destdirs = dirs
-	}
+	curdirs, destdirs := splitAndIgnoreEmpty(current), splitAndIgnoreEmpty(destination)
 
 	lastMatchIndex := -1
 	changedir := ""
@@ -42,4 +28,17 @@ func ChangePath(current, destination string) string {
 	}
 
 	return changedir
+}
+
+func splitAndIgnoreEmpty(s string) []string {
+
+	result := []string{}
+	if dirs := strings.Split(s, "/"); len(dirs) > 0 && dirs[0] == "" {
+		result = dirs[1:]
+
+	} else {
+		result = dirs
+	}
+
+	return result
 }
