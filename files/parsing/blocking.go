@@ -10,8 +10,15 @@ import (
 )
 
 type TextFileStats struct {
-	WordCount int
-	FileName  string
+	WordCount  int
+	FileName   string
+	CharCounts map[string]int
+}
+
+type DirTxtStats struct {
+	TotalCount      int
+	TotalCharCounts map[string]int
+	TextFileStats   TextFileStats
 }
 
 /*
@@ -30,10 +37,27 @@ func BlockingFileStats(dir string) []TextFileStats {
 		if !f.IsDir() {
 			name := dir + "/" + f.Name()
 			count := wordCount(name)
-			result = append(result, TextFileStats{count, name})
+			result = append(result, TextFileStats{
+				count,
+				name,
+				map[string]int{},
+			})
 		}
 	}
 	return result
+}
+
+//AlphaNumericCount returns the count of all alpha numeric
+// characters in the string as a map
+func AlphaNumericCount(s string) (chars map[string]int) {
+	chars = map[string]int{}
+	eval := alphNumericOnly(s)
+	for _, c := range eval {
+		if string(c) != " " {
+			chars[string(c)]++
+		}
+	}
+	return
 }
 
 func wordCount(path string) int {
@@ -49,12 +73,17 @@ func wordCount(path string) int {
 	for scanner.Scan() {
 		line := scanner.Text()
 		i++
-		wc += countWords(line)
+		wc += CountWords(line)
 	}
 	return wc
 }
 
-func countWords(s string) int {
+/*
+CountWords counts words in  a string
+where a word is any group of alpha numeric characters seperated
+by spaces
+*/
+func CountWords(s string) int {
 	fields := strings.Fields(s)
 	words := []string{}
 	for _, field := range fields {
