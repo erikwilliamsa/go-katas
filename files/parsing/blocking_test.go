@@ -1,37 +1,140 @@
 package parsing
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBlockingFileStats(t *testing.T) {
+func TestGetTextFileStats(t *testing.T) {
+	base := "./_resources/"
+
+	tests := []struct {
+		path     string
+		expected TextFileStats
+	}{
+		{
+			path: base + "/r1.txt",
+			expected: TextFileStats{
+				WordCount: 5,
+				FileName:  base + "/r1.txt",
+				CharCounts: map[string]int{
+					"A": 1,
+					"b": 1,
+					"a": 2,
+					"c": 2,
+					"o": 4,
+					"n": 1,
+					"t": 1,
+					"i": 1,
+					"s": 1,
+					"g": 1,
+					"d": 1,
+				},
+			},
+		},
+		{
+			path: base + "/r2.txt",
+			expected: TextFileStats{
+				WordCount: 2,
+				FileName:  base + "/r2.txt",
+				CharCounts: map[string]int{
+					"f": 1,
+					"o": 2,
+					"a": 1,
+					"b": 1,
+					"r": 1,
+				},
+			},
+		},
+		{
+			path: base + "/empty/empty.txt",
+			expected: TextFileStats{
+				WordCount:  0,
+				FileName:   base + "/empty/empty.txt",
+				CharCounts: map[string]int{},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		file, err := os.Open(tt.path)
+		assert.Nil(t, err, "Should be no file errors")
+
+		result := GetTextFileStats(file)
+		assert.Equal(t, tt.expected.WordCount, result.WordCount)
+		assert.Equal(t, tt.expected.FileName, result.FileName, "File names should match")
+		assert.Equal(t, tt.expected.CharCounts, result.CharCounts, "File names should match")
+		file.Close()
+
+	}
+}
+
+func TestBlockingAllFileStats(t *testing.T) {
 	base := "./_resources"
 	tests := []struct {
 		directory string
-		expected  []TextFileStats
+		expected  DirTxtStats
 	}{
 		{
 			directory: base,
-			expected: []TextFileStats{
-				{
-					WordCount:  5,
-					FileName:   base + "/r1.txt",
-					CharCounts: map[string]int{},
+			expected: DirTxtStats{
+				TotalCount: 7,
+				TotalCharCounts: map[string]int{
+					"f": 1,
+					"r": 1,
+					"A": 1,
+					"b": 2,
+					"a": 3,
+					"c": 2,
+					"o": 6,
+					"n": 1,
+					"t": 1,
+					"i": 1,
+					"s": 1,
+					"g": 1,
+					"d": 1,
 				},
-				{
-					WordCount:  2,
-					FileName:   base + "/r2.txt",
-					CharCounts: map[string]int{},
+				TextFileStats: []TextFileStats{
+					TextFileStats{
+						WordCount: 5,
+						FileName:  base + "/r1.txt",
+						CharCounts: map[string]int{
+							"A": 1,
+							"b": 1,
+							"a": 2,
+							"c": 2,
+							"o": 4,
+							"n": 1,
+							"t": 1,
+							"i": 1,
+							"s": 1,
+							"g": 1,
+							"d": 1,
+						},
+					},
+					TextFileStats{
+						WordCount: 2,
+						FileName:  base + "/r2.txt",
+						CharCounts: map[string]int{
+							"f": 1,
+							"o": 2,
+							"a": 1,
+							"b": 1,
+							"r": 1,
+						},
+					},
 				},
 			},
 		},
 	}
 
 	for _, test := range tests {
-		result := BlockingFileStats(test.directory)
-		assert.EqualValues(t, test.expected, result)
+		result := BlockingAllFileStats(test.directory)
+		assert.Equal(t, test.expected.TotalCount, result.TotalCount)
+		assert.Equal(t, test.expected.TotalCharCounts, result.TotalCharCounts)
+		assert.Equal(t, test.expected.TextFileStats, result.TextFileStats)
 
 	}
 

@@ -18,33 +18,45 @@ type TextFileStats struct {
 type DirTxtStats struct {
 	TotalCount      int
 	TotalCharCounts map[string]int
-	TextFileStats   TextFileStats
+	TextFileStats   []TextFileStats
 }
 
 /*
-BlockingFileStats Reads all files in a directory
-and returns the word counts.
+BlockingAllFileStats Reads all files in a directory
+and returns the word counts, alpha numeric character count
+and individual TextFileStats.
 */
-func BlockingFileStats(dir string) []TextFileStats {
+func BlockingAllFileStats(dir string) DirTxtStats {
 
+	dts := DirTxtStats{TotalCharCounts: map[string]int{}, TextFileStats: []TextFileStats{}}
 	files, err := ioutil.ReadDir(dir)
+
 	if err != nil {
 		log.Fatal("ERROR:", err)
 	}
-	result := []TextFileStats{}
 
-	for _, f := range files {
-		if !f.IsDir() {
-			name := dir + "/" + f.Name()
-			count := wordCount(name)
-			result = append(result, TextFileStats{
-				count,
-				name,
-				map[string]int{},
-			})
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		if of, err := os.Open(dir + "/" + file.Name()); err == nil {
+			fs := GetTextFileStats(of)
+			of.Close()
+
+			dts.TotalCount += fs.WordCount
+			dts.TotalCharCounts = mergCharCountMap(dts.TotalCharCounts, fs.CharCounts)
+			dts.TextFileStats = append(dts.TextFileStats, fs)
+
 		}
 	}
-	return result
+	return dts
+}
+
+func mergCharCountMap(m1, m2 map[string]int) map[string]int {
+	for k, v := range m2 {
+		m1[k] += v
+	}
+	return m1
 }
 
 //AlphaNumericCount returns the count of all alpha numeric
@@ -55,6 +67,21 @@ func AlphaNumericCount(s string) (chars map[string]int) {
 	for _, c := range eval {
 		if string(c) != " " {
 			chars[string(c)]++
+		}
+	}
+	return
+}
+
+func GetTextFileStats(file *os.File) (tfs TextFileStats) {
+
+	scanner := bufio.NewScanner(file)
+	tfs = TextFileStats{FileName: file.Name(), WordCount: 0, CharCounts: map[string]int{}}
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		tfs.WordCount += CountWords(line)
+		for k, v := range AlphaNumericCount(line) {
+			tfs.CharCounts[k] += v
 		}
 	}
 	return
