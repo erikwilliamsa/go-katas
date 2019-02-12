@@ -34,6 +34,7 @@ func BlockingAllFileStats(dir string) DirTxtStats {
 
 		}
 	}
+	//fmt.Println("Blocking Total:", dts.TotalCount)
 	return dts
 }
 
