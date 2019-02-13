@@ -13,7 +13,16 @@ ConcurrentFileStats does the same as BlockingAllFileStats except that for each f
 
 ### PipedGetAllFileStats
 
-PipedGetAllFileStats creates a data pipe line using multiple channels and go routines for each step.
+PipedGetAllFileStats creates a data pipeline using multiple channels and go routines for each step. In the end, channels are merged back in to create a single output.
+
+1. For each file in a directory, create 
+    - go routine for counting words in a line with an channel that outputs an `int`
+    - go routine fo counting characters in a line with a channel that outputs a map containing the alpha numeric characters and `int` count of number of times the character was found in that string.
+
+2. For each line of a file  send it over the word count and character count channels
+3. Concurrently count words and characters for a given line and output the results over the channel that a collector is listening to.
+4. Collector will accumulate the stats for a particular file in that pipeline.
+5. Merge will get total up the counts for characters (merging ht maps as well), as well as combine a list of individual file stats and write it to a final output channel.
 
 
 ```
