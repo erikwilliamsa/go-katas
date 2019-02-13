@@ -23,18 +23,34 @@ func PipedGetAllFileStats(dir string) {
 			continue
 		}
 		if of, err := os.Open(dir + "/" + file.Name()); err == nil {
+			//Ensure everyhing is created before continuing on.
 			wg.Add(1)
-			wcLineCh, charCtLineCh := pipeStart(of, &wg)
-			//pipeCountWords
+
+			// For each file, create a starting point that will read the file.
+			// Create 2 channels that will handle out of of a string intended
+			// to be given to both the character counter and word counter.
+			// The inputStart will not return until the waitgroup is done to
+			// ensure all readers have been started as well.
+			wcLineCh, charCtLineCh := inputStart(of, &wg)
+
+			//Create the go routine that will count words in each line.
+			//This returns a channel that the routine will output counts for
+			//every input it is given.
 			wctCh := pipeCountWords(wcLineCh)
-			//pipeCountChars
+
+			//Same as piped countwords, except the count is a map of all characters
+			// in the string.
 			charctCh := pipedCountChars(charCtLineCh)
 
+			// For each file we want to begin combining the steps. A stat colloctor will begin
+			// To "fan-in" the channels coming from the count routines.
 			collectors = append(collectors, statCollector(of.Name(), wctCh, charctCh))
 			wg.Done()
 
 		}
 	}
+
+	// Create a channel that will return the combined stats from all files.
 	dtsch := mergeStats(collectors...)
 	dts := <-dtsch
 	_ = dts.TotalCount //
@@ -87,7 +103,7 @@ func mergeStats(statcollection ...<-chan TextFileStats) <-chan DirTxtStats {
 
 }
 
-func pipeStart(of *os.File, wg *sync.WaitGroup) (wct, charct chan string) {
+func inputStart(of *os.File, wg *sync.WaitGroup) (wct, charct chan string) {
 	wct, charct = make(chan string, 10), make(chan string, 10)
 	wg.Add(1)
 
